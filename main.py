@@ -30,3 +30,21 @@ async def obtain_stock_data(request: stock_ticker):
     except Exception as e:
         raise HTTPException(status_code=404, detail="Ticker not found")
         
+@app.post("/stock/{stock_ticker}/history")
+async def get_stock_history(request: stock_ticker):
+    try:
+        stock = yf.Ticker(request.ticker)
+        history = stock.history(period="6mo")
+        
+        price_data = [{
+            "date": index.strftime("%Y-%m-%d"),
+            "price": round(row["Close"], 2)
+        } for index, row in history.iterrows()
+        ]
+        
+        return{
+            "history": price_data
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"ERROR: {str(e)}")
