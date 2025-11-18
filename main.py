@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import yfinance as yf
+from stock_tracker import get_active_stocks, get_gaining_stocks
 
 app = FastAPI(
     title="Stock Info API",
@@ -31,14 +32,47 @@ async def obtain_stock_data(request: stock_ticker):
         raise HTTPException(status_code=404, detail="Ticker not found")
         
 @app.post("/stock/{stock_ticker}/history")
-async def get_stock_history(request: stock_ticker):
+async def get_stock_history(request: stock_ticker, period: str = "1d"):
+    allowed_periods = ["1d", "5d", "1mo", "3mo", "6mo", "1y", "max"]
+    
+    if period not in allowed_periods:
+        raise HTTPException(status_code=400, detail="Period not valid.")
+    
     try:
         stock = yf.Ticker(request.ticker)
-        history = stock.history(period="6mo")
+        interval = "1d"
+        
+        match period:
+            case "1d":
+                interval = "5m" 
+            
+            case "5d":
+                interval = "30m"
+            
+            case "1mo":
+                interval = "90m"
+            
+            case "3mo":
+                interval = "1d"
+            
+            case "6mo" | "1y":
+                interval = "5d"
+                
+            case _:
+                interval = "1mo"
+                
+                
+        history = stock.history(period=period, interval=interval)
+
         
         price_data = [{
             "date": index.strftime("%Y-%m-%d"),
-            "price": round(row["Close"], 2)
+            "close": round(row["Close"], 2),
+            "open": round(row["Open"], 2),
+            "high": round(row["High"], 2),
+            "low": round(row["Low"], 2),
+            "volume": round(row["Volume"])
+            
         } for index, row in history.iterrows()
         ]
         

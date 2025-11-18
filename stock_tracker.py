@@ -22,7 +22,5 @@ def get_gaining_stocks():
     df = pd.DataFrame(quotes)[["symbol", "shortName", "regularMarketPrice", "regularMarketChangePercent", "trailingPE"]]
     return df[:10]
 
-print(get_active_stocks(), "\n\n")
-print(get_gaining_stocks())
 
 
